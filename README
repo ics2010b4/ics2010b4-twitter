@@ -1,0 +1,6 @@
+author: Kurihara Makoto
+
+date: 2011/03/15
+app.yaml : settings of this application
+main.py : main source code
+/tweepy : A python library for the Twitter API
