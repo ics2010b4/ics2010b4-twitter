@@ -1,0 +1,5 @@
+cron:
+- description: hello world
+  url: /hello
+  schedule: every 2 minutes
+  timezone: Asia/Tokyo
