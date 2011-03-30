@@ -17,11 +17,13 @@
 #
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
+from google.appengine.ext import db
 
 import tweepy
+import comment
 
 
-class MainHandler(webapp.RequestHandler):
+class ShowTimeline(webapp.RequestHandler):
     def get(self):
         self.response.out.write('Hello world!<br>')
         
@@ -43,8 +45,54 @@ class MainHandler(webapp.RequestHandler):
             self.response.out.write('<br>')
 
 
+class LastIdDataBase(db.Model):
+    last_id = db.StringProperty(multiline=False)
+
+
+class Init(webapp.RequestHandler):
+    def get(self):
+        init_id = LastIdDataBase(last_id = '0')
+        init_id.put()
+        self.response.out.write('init ok!')
+        
+
+class HelloWorld(webapp.RequestHandler):
+    def get(self):
+        CONSUMER_KEY = 'JhyigwId8U3Pn4nobdQ'
+        CONSUMER_SECRET = '1rBJsJFIFwyAvgPNvO20GUFp3IV5zOJWa1tiBsZoQ'
+        ACCESS_KEY = '264046987-VRaRbOwwfcobBqI5kqTOPgbhxJ7FRgXr1iwab4'
+        ACCESS_SECRET = 'fJ6ddZW1QDAOPlrtxsieUrZOO6R4tuthPPRrQqmjs'
+
+        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
+        api = tweepy.API(auth)
+
+        query = db.Query(LastIdDataBase)
+        result = query.get()
+
+        if(result.last_id=='0'):
+            mentions = api.mentions()
+        else:
+            mentions = api.mentions(since_id = result.last_id)
+            self.response.out.write(result.last_id)
+            self.response.out.write('<br>')
+
+        if(len(mentions)!=0):
+            result.delete()
+            mem_id = LastIdDataBase(last_id=mentions[0].id_str)
+            mem_id.put()
+
+        for mention in mentions:
+            if(mention.text == '@ics2010b4 Hello'):
+                status = u'@%s world!' % mention.author.screen_name
+                api.update_status(status)
+                self.response.out.write('ok')
+
+            
 def main():
-    application = webapp.WSGIApplication([('/', MainHandler)],
+    application = webapp.WSGIApplication([('/', ShowTimeline),
+                                          ('/hello', HelloWorld),
+                                          ('/init', Init)],
                                          debug=True)
     util.run_wsgi_app(application)
 
